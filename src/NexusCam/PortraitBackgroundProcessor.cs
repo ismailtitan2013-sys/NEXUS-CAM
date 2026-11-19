@@ -64,7 +64,7 @@ public sealed class PortraitBackgroundProcessor : IDisposable
     {
         int originalWidth = frame.Width;
         int originalHeight = frame.Height;
-        int inputHeight = 512;
+        int inputHeight = 256;
         int inputWidth = Math.Max(32, (int)Math.Round((double)originalWidth / originalHeight * inputHeight / 32) * 32);
 
         using var resized = new Mat();
@@ -82,7 +82,7 @@ public sealed class PortraitBackgroundProcessor : IDisposable
             tensor[0, 2, y, x] = (pixel.Item2 / 255f - 0.5f) / 0.5f;
         }
 
-        using var inputs = new[] { NamedOnnxValue.CreateFromTensor(_inputName, tensor) };
+        var inputs = new[] { NamedOnnxValue.CreateFromTensor(_inputName, tensor) };
         using var results = _session.Run(inputs);
         var output = results.First(x => x.Name == _outputName).AsTensor<float>();
         int matteHeight = output.Dimensions[^2];
