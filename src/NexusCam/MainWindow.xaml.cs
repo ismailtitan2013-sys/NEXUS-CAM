@@ -16,6 +16,10 @@ public partial class MainWindow : Window
 {
     private VideoCapture? _capture;
     private CancellationTokenSource? _captureCancellation;
+    private PortraitBackgroundProcessor? _portraitProcessor;
+    private Mat? _backgroundMat;
+    private string? _backgroundPath;
+    private volatile bool _aiEnabled;
 
     public MainWindow()
     {
@@ -24,7 +28,12 @@ public partial class MainWindow : Window
         CameraSelector.SelectedIndex = 0;
         ApplyMirror();
         Loaded += (_, _) => CameraStatus.Text = "Готово к запуску камеры";
-        Closed += (_, _) => StopCamera();
+        Closed += (_, _) =>
+        {
+            StopCamera();
+            _portraitProcessor?.Dispose();
+            _backgroundMat?.Dispose();
+        };
     }
 
     private async void StartButton_Click(object sender, RoutedEventArgs e)
@@ -56,8 +65,10 @@ public partial class MainWindow : Window
         CameraSelector.IsEnabled = false;
         ResolutionSelector.IsEnabled = false;
         FpsSelector.IsEnabled = false;
-        CameraStatus.Text = $"Камера работает • {width}×{height} • целевые {fps} FPS";
-        PreviewBadge.Text = "CAMERA LIVE";
+        CameraStatus.Text = _aiEnabled
+            ? "Камера работает • AI-замена фона включена"
+            : $"Камера работает • {width}×{height} • целевые {fps} FPS";
+        PreviewBadge.Text = _aiEnabled ? "AI BACKGROUND LIVE" : "CAMERA LIVE";
         LiveDot.Fill = new SolidColorBrush(Color.FromRgb(117, 224, 177));
 
         var token = _captureCancellation.Token;
@@ -75,7 +86,17 @@ public partial class MainWindow : Window
                         continue;
                     }
 
-                    BitmapSource bitmap = BitmapSourceConverter.ToBitmapSource(frame);
+                    BitmapSource bitmap;
+                    if (_aiEnabled && _portraitProcessor is not null && _backgroundMat is not null)
+                    {
+                        using var processed = _portraitProcessor.ReplaceBackground(frame, _backgroundMat);
+                        bitmap = BitmapSourceConverter.ToBitmapSource(processed);
+                    }
+                    else
+                    {
+                        bitmap = BitmapSourceConverter.ToBitmapSource(frame);
+                    }
+
                     bitmap.Freeze();
                     await Dispatcher.InvokeAsync(() => CameraImage.Source = bitmap);
                     await Task.Delay(Math.Max(1, 1000 / fps), token);
@@ -85,7 +106,7 @@ public partial class MainWindow : Window
         catch (OperationCanceledException) { }
         catch (Exception ex)
         {
-            CameraStatus.Text = "Ошибка камеры: " + ex.Message;
+            await Dispatcher.InvokeAsync(() => CameraStatus.Text = "Ошибка камеры/AI: " + ex.Message);
             StopCamera();
         }
     }
@@ -152,11 +173,60 @@ public partial class MainWindow : Window
 
             BackgroundThumbnail.Source = image;
             BackgroundName.Text = Path.GetFileName(dialog.FileName);
-            CameraStatus.Text = "Изображение фона выбрано • AI-замена пока не включена";
+            _backgroundPath = dialog.FileName;
+            _backgroundMat?.Dispose();
+            _backgroundMat = Cv2.ImRead(dialog.FileName, ImreadModes.Color);
+            if (_backgroundMat.Empty())
+            {
+                _backgroundMat.Dispose();
+                _backgroundMat = null;
+                throw new InvalidDataException("Файл изображения не удалось прочитать.");
+            }
+            CameraStatus.Text = "Фон выбран. Можно включить AI-замену.";
+            AiStatus.Text = "Фон готов. Нажми кнопку ниже, чтобы загрузить AI-модель.";
         }
         catch (Exception ex)
         {
             CameraStatus.Text = "Не удалось открыть изображение: " + ex.Message;
+        }
+    }
+
+    private async void AiButton_Click(object sender, RoutedEventArgs e)
+    {
+        if (_aiEnabled)
+        {
+            _aiEnabled = false;
+            AiButton.Content = "✨  Включить AI-замену фона";
+            AiStatus.Text = "AI-замена выключена.";
+            PreviewBadge.Text = _captureCancellation is null ? "CAMERA OFFLINE" : "CAMERA LIVE";
+            return;
+        }
+
+        if (string.IsNullOrWhiteSpace(_backgroundPath) || _backgroundMat is null || _backgroundMat.Empty())
+        {
+            AiStatus.Text = "Сначала выбери изображение фона.";
+            return;
+        }
+
+        AiButton.IsEnabled = false;
+        AiStatus.Text = "Подготовка AI-модуля...";
+        try
+        {
+            _portraitProcessor ??= await PortraitBackgroundProcessor.CreateAsync(
+                message => Dispatcher.Invoke(() => AiStatus.Text = message));
+            _aiEnabled = true;
+            AiButton.Content = "Выключить AI-замену фона";
+            AiStatus.Text = "AI-модель готова. Запусти камеру для замены фона.";
+            if (_captureCancellation is not null)
+                CameraStatus.Text = "AI-замена фона включена";
+        }
+        catch (Exception ex)
+        {
+            AiStatus.Text = "Не удалось загрузить AI-модель: " + ex.Message;
+        }
+        finally
+        {
+            AiButton.IsEnabled = true;
         }
     }
 }
