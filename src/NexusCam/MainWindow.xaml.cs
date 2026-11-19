@@ -6,6 +6,7 @@ using System.Windows;
 using System.Windows.Media.Imaging;
 using OpenCvSharp;
 using OpenCvSharp.WpfExtensions;
+using Window = System.Windows.Window;
 
 namespace NexusCam;
 
