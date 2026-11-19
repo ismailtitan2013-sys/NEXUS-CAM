@@ -1,0 +1,79 @@
+<Window x:Class="NexusCam.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="NEXUS CAM" Height="760" Width="1180"
+        MinHeight="650" MinWidth="980"
+        WindowStartupLocation="CenterScreen"
+        Background="#080D18" Foreground="#F4F6FF">
+    <Window.Resources>
+        <Style TargetType="Button">
+            <Setter Property="Foreground" Value="#F7F8FF"/>
+            <Setter Property="Background" Value="#26334F"/>
+            <Setter Property="BorderBrush" Value="#53658D"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Padding" Value="16,10"/>
+            <Setter Property="Margin" Value="0,6,0,6"/>
+            <Setter Property="Cursor" Value="Hand"/>
+        </Style>
+        <Style TargetType="ComboBox">
+            <Setter Property="Margin" Value="0,8,0,12"/>
+            <Setter Property="Padding" Value="8"/>
+            <Setter Property="Background" Value="#182238"/>
+            <Setter Property="Foreground" Value="#101827"/>
+        </Style>
+    </Window.Resources>
+    <Grid Margin="26">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+        <DockPanel Margin="0,0,0,22">
+            <StackPanel>
+                <TextBlock Text="NEXUS CAM" FontSize="27" FontWeight="Bold"/>
+                <TextBlock Text="LOCAL CAMERA WORKSPACE" Foreground="#91A3C9" FontSize="11" Margin="1,4,0,0"/>
+            </StackPanel>
+            <Border DockPanel.Dock="Right" Background="#17243A" CornerRadius="14" Padding="13,8" VerticalAlignment="Center">
+                <TextBlock Text="PREVIEW BUILD" Foreground="#B9C7FF" FontSize="11" FontWeight="SemiBold"/>
+            </Border>
+        </DockPanel>
+        <Grid Grid.Row="1">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="300"/>
+            </Grid.ColumnDefinitions>
+            <Border Background="#111A2A" BorderBrush="#334361" BorderThickness="1" CornerRadius="22" Padding="12" Margin="0,0,20,0">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="*"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+                    <Border Background="#070B12" CornerRadius="15" ClipToBounds="True">
+                        <Image x:Name="CameraImage" Stretch="Uniform"/>
+                    </Border>
+                    <DockPanel Grid.Row="1" Margin="4,12,4,2">
+                        <TextBlock x:Name="CameraStatus" Text="Камера не запущена" Foreground="#AAB8D5" VerticalAlignment="Center"/>
+                        <TextBlock Text="LOCAL PREVIEW" Foreground="#8293B8" FontSize="10" DockPanel.Dock="Right" VerticalAlignment="Center"/>
+                    </DockPanel>
+                </Grid>
+            </Border>
+            <Border Grid.Column="1" Background="#111A2A" BorderBrush="#334361" BorderThickness="1" CornerRadius="22" Padding="20">
+                <StackPanel>
+                    <TextBlock Text="Настройки" FontSize="20" FontWeight="SemiBold" Margin="0,0,0,16"/>
+                    <TextBlock Text="Источник камеры" Foreground="#AAB8D5"/>
+                    <ComboBox x:Name="CameraSelector"/>
+                    <Button x:Name="StartButton" Content="Запустить предпросмотр" Click="StartButton_Click"/>
+                    <Button x:Name="StopButton" Content="Остановить" Click="StopButton_Click" IsEnabled="False"/>
+                    <Separator Background="#334361" Margin="0,18,0,18"/>
+                    <TextBlock Text="Фон" FontSize="16" FontWeight="SemiBold"/>
+                    <TextBlock Text="Выбор изображения будет подключён вместе с модулем сегментации." TextWrapping="Wrap" Foreground="#AAB8D5" Margin="0,8,0,8"/>
+                    <Button Content="Выбрать изображение — скоро" IsEnabled="False"/>
+                    <Border Background="#1B2A43" CornerRadius="12" Padding="12" Margin="0,18,0,0">
+                        <TextBlock Text="Важно: сейчас работает только локальный предпросмотр камеры. Замена фона и виртуальная камера для Zoom ещё не реализованы." TextWrapping="Wrap" Foreground="#D5DDF3" FontSize="12"/>
+                    </Border>
+                </StackPanel>
+            </Border>
+        </Grid>
+        <TextBlock Grid.Row="2" Text="NEXUS CAM • ранняя сборка • обработка видео пока не передаётся в Zoom" Foreground="#7183A8" FontSize="11" Margin="2,16,0,0"/>
+    </Grid>
+</Window>
